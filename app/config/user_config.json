@@ -1,0 +1,31 @@
+{
+  "weight": 62.5,
+  "age": 21,
+  "sex": "male",
+  "power": {
+    "FTP": 272.0,
+    "FTP_indoor": 272.0,
+    "peak_power": 0.5,
+    "WJ": 25350,
+    "eFTP_time": 300
+  },
+  "heart_rate": {
+    "max_bpm": 208,
+    "threshold_bpm": 189,
+    "resting_bpm": 50,
+    "hrrc_bpm": 189,
+    "warmup_time": 10,
+    "cooldown_time": 10
+  },
+  "bike": {
+    "crank_radius_mm": 170.0,
+    "tire_Width_cc": 25,
+    "CDA": 0.25
+  },
+  "units": {
+    "temperature": "C",
+    "speed": "kph",
+    "altitude": "m",
+    "distance": "km"
+  }
+}

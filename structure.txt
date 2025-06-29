@@ -1,0 +1,26 @@
+Intervals/
+├── app/
+│   ├── README.md
+│   ├── api/
+│   │   ├── upload.py
+│   │   ├── user_config.py
+│   │   └── user_config_update.py
+│   ├── config/
+│   │   └── user_config.json
+│   ├── core/
+│   │   ├── cadence.py
+│   │   ├── fit_parser.py
+│   │   ├── heart_rate.py
+│   │   ├── more_data.py
+│   │   ├── power.py
+│   │   ├── user_config.py
+│   │   └── utils.py
+│   └── main.py
+├── structure.txt
+└── test/
+    ├── cp3_410w.fit
+    ├── jingshan.fit
+    ├── thp.fit
+    ├── update_user_config.ps1
+    ├── upload_fit.ps1
+    └── xxx.fit
