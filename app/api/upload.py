@@ -15,7 +15,7 @@ from app.core.utils import format_seconds
 
 fields = [
     "avg_cadence", "avg_cadence_position", "avg_combined_pedal_smoothness", "avg_fractional_cadence",
-    "avg_heart_rate", "avg_left_pco", "avg_left_pedal_smoothness", "avg_left_power_phase"
+    "avg_heart_rate", "avg_left_pco", "avg_left_pedal_smoothness", "avg_left_power_phase",
     "avg_left_power_phase_peak", "avg_left_torque_effectiveness", "avg_power", "avg_power_position",
     "avg_right_pco", "avg_right_pedal_smoothness", "avg_right_power_phase", "avg_right_power_phase_peak",
     "avg_right_torque_effectiveness", "avg_speed", "avg_temperature", "avg_vam", "enhanced_avg_speed",
@@ -26,7 +26,7 @@ fields = [
     "start_position_long", "start_time", "sub_sport", "swc_lat", "swc_long", "threshold_power", "time_standing",
     "timestamp", "total_anaerobic_training_effect", "total_ascent", "total_calories", "total_cycles",
     "total_descent", "total_distance", "total_elapsed_time", "total_fat_calories", "total_fractional_cycles",
-    "total_timer_time", "total_training_effect", "total_work", "training_stress_score", "trigger"
+    "total_timer_time", "total_training_effect", "total_work", "training_stress_score", "trigger",
 ]
 
 
@@ -53,7 +53,6 @@ async def upload_fit(file: UploadFile = File(...)):
 
 
     cleaned_data  = clean_fit_data(data)
-    total_seconds = time_info["session.total_timer_time"]
     FTP           = user_config["power"]["FTP"]
 
 
@@ -64,7 +63,6 @@ async def upload_fit(file: UploadFile = File(...)):
 
 
     # 计算基本指标
-    total_time    = total_seconds  
     moving_time   = len(cleaned_data)
     Dis           = total_distance(cleaned_data['distance'])
     MaxS          = max_speed(cleaned_data['enhanced_speed'])
@@ -73,6 +71,9 @@ async def upload_fit(file: UploadFile = File(...)):
     coast_time    = coasting_time(cleaned_data['enhanced_speed'], cleaned_data['power']) \
     if not cleaned_data['enhanced_speed'].isnull().all() else coasting_time(cleaned_data['enhanced_speed'])
     coast_ratio   = round((coast_time / moving_time) * 100, 1) if moving_time > 0 else None
+
+    if "total_ascent" in session.columns:
+        Elev = int(session["total_ascent"].iloc[0])
 
 
     # 计算功率相关指标
@@ -88,6 +89,9 @@ async def upload_fit(file: UploadFile = File(...)):
     else:
         AP, MaxP, NP, TSS, W, W_ABOVE_FTP, CAL, eFTP = None, None, None, None, None, None, None, None
         
+    if "total_calories" in session.columns:
+        CAL = int(session["total_calories"].iloc[0])
+
     
     if not cleaned_data['power'].isnull().all() and cleaned_data['altitude'].notnull().all(): 
         acclim_power = get_altitude_adjusted_power_acclimatized(cleaned_data['power'], cleaned_data['altitude'],)
@@ -127,7 +131,10 @@ async def upload_fit(file: UploadFile = File(...)):
         
     if "left_right_balance" in cleaned_data.columns:
         LEFT = left_right_balance(cleaned_data['left_right_balance'])
-        RIGHT = 1 - LEFT
+        if LEFT is not None:
+            RIGHT = 1 - LEFT
+        else:
+            RIGHT = None
 
     else:
         LEFT, RIGHT = None, None
@@ -138,9 +145,9 @@ async def upload_fit(file: UploadFile = File(...)):
 
 
     # 计算其他指标
-    IF = round(NP / FTP, 2) if NP > 0 else None
-    EF = round(AP / AvgHR, 2) if AvgHR > 0 and AP > 0 else None
-    VI = round(NP / AP, 2) if AP > 0 and NP > 0 else None
+    IF = round(NP / FTP, 2) if NP is not None and NP > 0 else None
+    EF = round(AP / AvgHR, 2) if AvgHR is not None and AvgHR > 0 and AP is not None and  AP > 0 else None
+    VI = round(NP / AP, 2) if AP is not None and AP > 0 and NP > 0 else None
 
     # 温度
     if "temperature" in cleaned_data.columns and not cleaned_data['temperature'].isnull().all():
@@ -165,6 +172,7 @@ async def upload_fit(file: UploadFile = File(...)):
             "max_speed"      : MaxS,                       # Units      : km/h
             "total_distance" : Dis,                        # Units      : km
             "elevation"      : Elev,                       # Units      : m
+            "descent"         : int(results["total_descent"]) if results["total_descent"] is not None else None,          # Total Descent, Units: m
             "max_temperature": MaxT,                       # Units      : °C
             "avg_temperature": AvgT,                       # Units      : °C
             "min_temperature": MinT,                       # Units      : °C
@@ -173,25 +181,25 @@ async def upload_fit(file: UploadFile = File(...)):
         "Power": {
             "avg"            : AP,             # Average Power,          Units: watts
             "max"            : MaxP,           # Max Power,              Units: watts
-            "NP"             : NP,             # Normalized Power,       Units: watts
-            "TSS"            : TSS,            # Training Stress Score,  Units: points
-            "W"              : W,              # Work Done,              Units: kJ
-            "W_ABOVE_FTP"    : W_ABOVE_FTP,    # Work Done Above FTP,    Units: kJ
-            "CAL"            : CAL,            # Calories Burned,        Units: kcal
+            "normalized_power"     : NP,             # Normalized Power,       Units: watts
+            "training_stress_score"            : TSS,            # Training Stress Score,  Units: points
+            "work"              : W,              # Work Done,              Units: kJ
+            "work_above_ftp"    : W_ABOVE_FTP,    # Work Done Above FTP,    Units: kJ
+            "total_calories" : CAL,            # Calories Burned,        Units: kcal
             "nonacclimated"  : nonacclimpower, # Non-acclimatized Power, Units: watts
             "acclimated"     : acclim_power,   # Acclimatized Power,     Units: watts
         },
         "HeartRate": {
-            "avg"              : AvgHR,             # Average Heart Rate,                 Units: bpm
-            "max"              : MaxHR,             # Max Heart Rate,                     Units: bpm
+            "avg_heartrate"              : AvgHR,             # Average Heart Rate,                 Units: bpm
+            "max_heartrate"              : MaxHR,             # Max Heart Rate,                     Units: bpm
             "hrrc"             : HRRC,              # Heart Rate Recovery Capability,     Units: bpm
             "decoupling"       : decoupling,        # heart rate decoupling ratio,        Units: None
             "simple_decoupling": simple_decoupling, # simple heart rate decoupling ratio, Units: None
             "hr_lag"           : hr_lag,            # Heart Rate Lag,                     Units: seconds
         },
         "Cadence": {
-            "avg"                           : avgCadence,                                # Average Cadence,                    Units: rpm
-            "max"                           : maxCadence,                                # Max Cadence,                        Units: rpm
+            "avg_cadence"                           : avgCadence,                                # Average Cadence,                    Units: rpm
+            "max_cadence"                           : maxCadence,                                # Max Cadence,                        Units: rpm
             "max_torque"                    : maxTorque,                                 # Max Torque,                         Units: Nm
             "avg_torque"                    : avgTorque,                                 # Average Torque,                     Units: Nm
             "avg_cadence_position"          : results["avg_cadence_position"],           # Average Cadence Position,           Units: degrees
@@ -227,5 +235,14 @@ async def upload_fit(file: UploadFile = File(...)):
             "torque_curve": torque_curve, # Torque Curve
             "wbal_curve"  : wbal_curve,   # W' Balance Curve
             "decoupling_curve": decoupling_curve, # Decoupling Ratio Curve
-        }
+        },
+        "raw_data": {
+            "power": cleaned_data['power'].tolist() if 'power' in cleaned_data.columns else None,
+            "heart_rate": cleaned_data['heart_rate'].tolist() if 'heart_rate' in cleaned_data.columns else None,
+            "cadence": cleaned_data['cadence'].tolist() if 'cadence' in cleaned_data.columns else None,
+            "speed": cleaned_data['enhanced_speed'].tolist() if 'enhanced_speed' in cleaned_data.columns else None,
+            "altitude": cleaned_data['enhanced_altitude'].tolist() if 'enhanced_altitude' in cleaned_data.columns else None,
+            "temperature": cleaned_data['temperature'].tolist() if 'temperature' in cleaned_data.columns else None,
+        },
+
     }
