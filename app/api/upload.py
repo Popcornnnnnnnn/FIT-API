@@ -60,8 +60,11 @@ async def upload_fit(file: UploadFile = File(...)):
         W           = calculate_work_kj(cleaned_data['power'])                                 
         W_ABOVE_FTP = calculate_work_kj_above_ftp(cleaned_data['power'])                       
         CAL         = estimate_calories(cleaned_data['power'])       
+        # eFTP        = estimate_eFTP(cleaned_data['power']) 
     else:
-        AP, MaxP, NP, TSS, W, W_ABOVE_FTP, CAL = None, None, None, None, None, None, None
+        AP, MaxP, NP, TSS, W, W_ABOVE_FTP, CAL, eFTP = None, None, None, None, None, None, None, None
+        
+    print(estimate_ftp_morton(cleaned_data['power']))
 
     if not cleaned_data['power'].isnull().all() and cleaned_data['altitude'].notnull().all(): 
         acclim_power = get_altitude_adjusted_power_acclimatized(cleaned_data['power'], cleaned_data['altitude'],)
@@ -170,10 +173,10 @@ async def upload_fit(file: UploadFile = File(...)):
             "EF": EF, # Efficiency Factor, Units: None
             "VI": VI, # Variance Index,    Units: None
         },
-        # "curves": {
-        #     "power_curve" : power_curve,  # Max Power Duration Curve
-        #     "torque_curve": torque_curve, # Torque Curve
-        #     "wbal_curve"  : wbal_curve,   # W' Balance Curve
-        #     "decoupling_curve": decoupling_curve, # Decoupling Ratio Curve
-        # }
+        "curves": {
+            "power_curve" : power_curve,  # Max Power Duration Curve
+            "torque_curve": torque_curve, # Torque Curve
+            "wbal_curve"  : wbal_curve,   # W' Balance Curve
+            "decoupling_curve": decoupling_curve, # Decoupling Ratio Curve
+        }
     }

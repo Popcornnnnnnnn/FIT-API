@@ -210,3 +210,57 @@ def get_altitude_adjusted_power_acclimatized(power_data: pd.Series, altitude_dat
 def get_altitude_adjusted_power_nonacclimatized(power_data: pd.Series, altitude_data: pd.Series) -> float:
     """未适应高原运动员的海拔修正功率"""
     return get_altitude_adjusted_power(power_data, altitude_data, model="bassett_nonacclim")["alt"]
+
+from scipy.optimize import curve_fit
+
+def morton_model(t, CP, W_prime):
+    # Morton模型公式
+    return CP + W_prime / t
+
+def estimate_ftp_morton(power_series, min_duration=3, max_duration=1800):
+    length = len(power_series)
+    max_duration = min(max_duration, length)
+
+    durations = list(range(min_duration, max_duration + 1))
+    max_powers = []
+
+    for d in durations:
+        # 计算滑动窗口均值
+        rolling_means = []
+        window_sum = sum(power_series[:d])
+        rolling_means.append(window_sum / d)
+        for i in range(d, length):
+            window_sum += power_series[i] - power_series[i - d]
+            rolling_means.append(window_sum / d)
+        max_avg = max(rolling_means) if rolling_means else 0
+        max_powers.append(max_avg)
+
+    # 去除NaN（如果有的话，严格处理）
+    filtered = [(dur, power) for dur, power in zip(durations, max_powers) if power is not None and not math.isnan(power)]
+    if len(filtered) < 3:
+        return 0.0, 0, 0.0
+
+    durations, max_powers = zip(*filtered)
+
+    # Morton模型拟合初始值
+    CP_init = sorted(max_powers)[len(max_powers)//3]
+    W_prime_init = (max_powers[0] - max_powers[-1]) * durations[0]
+    p0 = [CP_init, W_prime_init]
+
+    try:
+        popt, _ = curve_fit(morton_model, durations, max_powers,
+                            bounds=([0, 0], [2000, 20000]),
+                            p0=p0,
+                            maxfev=10000)
+        CP, W_prime = popt
+    except Exception:
+        return 0.0, 0, 0.0
+
+    # 找最接近CP的时间窗
+    diffs = [abs(p - CP) for p in max_powers]
+    best_idx = diffs.index(min(diffs))
+    best_duration = durations[best_idx]
+    max_power_at_best_duration = max_powers[best_idx]
+
+    return round(float(CP), 2), int(best_duration), round(float(max_power_at_best_duration), 2)
+
