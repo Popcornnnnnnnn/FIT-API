@@ -74,3 +74,12 @@ def get_fit_date_time_info(file_path: str) -> dict:
 
     return date_time_info
 
+def parse_fit_session(file_path: str) -> pd.DataFrame:
+    fitfile = FitFile(file_path)
+    sessions = []
+    for session in fitfile.get_messages('session'):
+        data = {}
+        for d in session:
+            data[d.name] = d.value
+        sessions.append(data)
+    return pd.DataFrame(sessions)

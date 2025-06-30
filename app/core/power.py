@@ -211,6 +211,21 @@ def get_altitude_adjusted_power_nonacclimatized(power_data: pd.Series, altitude_
     """未适应高原运动员的海拔修正功率"""
     return get_altitude_adjusted_power(power_data, altitude_data, model="bassett_nonacclim")["alt"]
 
+def left_right_balance(balance_data: pd.Series):
+
+    balance_series = pd.to_numeric(balance_data, errors='coerce').dropna()
+
+    if balance_series.empty:
+        return None  # 没有有效数据
+
+    right_percentages = balance_series.astype(int) & 0b01111111
+    left_percentages = 100 - right_percentages
+
+    avg_left = left_percentages.mean()
+
+    return round(avg_left, 1)
+
+
 from scipy.optimize import curve_fit
 
 def morton_model(t, CP, W_prime):

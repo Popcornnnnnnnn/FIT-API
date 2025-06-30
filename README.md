@@ -90,80 +90,106 @@ Returns a JSON object containing the analysis result with these keys:
 
 ---
 
-## 📈 Response Fields (Grouped by Category)
+## 📈 响应字段（按类别分组）
 
-### `basic`
-| Field            | Description                   | Unit   |
-|------------------|-------------------------------|--------|
-| `time_info`      | Start/end time, total time, ... | -      |
-| `coast_time`     | Total coasting time           | h: m: s |
-| `coast_ratio`    | % of time spent coasting      | %      |
-| `avg_speed`      | Average speed                 | km/h   |
-| `max_speed`      | Maximum speed                 | km/h   |
-| `total_distance` | Total distance                | km     |
-| `elevation`      | Total elevation gain          | m      |
-| `max_temperature`| Max ambient temperature       | °C    |
-| `avg_temperature`| Avg ambient temperature       | °C    |
-| `min_temperature`| Min ambient temperature       | °C    |
+### `Basic`（基础信息）
 
-### `power`
-
-| Field           | Description                          | Unit  |
-|------------------|--------------------------------------|--------|
-| `avg`            | Average power                        | watts |
-| `max`            | Maximum power                        | watts |
-| `NP`             | Normalized power                     | watts |
-| `TSS`            | Training Stress Score                | pts   |
-| `W`              | Work done                            | kJ    |
-| `W_ABOVE_FTP`    | Work above FTP                       | kJ    |
-| `CAL`            | Calories burned                      | kcal  |
-| `acclimated`     | Adjusted power (acclimatized)        | watts |
-| `nonacclimated`  | Adjusted power (non-acclimatized)    | watts |
-
-### `heart_rate`
-| Field            | Description                         | Unit |
-|------------------|-------------------------------------|------|
-| `avg`            | Average heart rate                  | bpm  |
-| `max`            | Maximum heart rate                  | bpm  |
-| `hrrc`           | Heart rate recovery capability      | bpm  |
-| `decoupling`     | HR/power decoupling ratio           | -    |
-| `simple_decoupling` | Simplified decoupling ratio      | -    |
-| `hr_lag`         | Time delay between power and HR     | sec  |
-
-### `cadence`
-| Field       | Description         | Unit |
-|-------------|---------------------|------|
-| `avg`       | Average cadence     | rpm  |
-| `max`       | Maximum cadence     | rpm  |
-| `max_torque`| Maximum torque      | Nm   |
-| `avg_torque`| Average torque      | Nm   |
-
-### `Zones`
-| Field              | Description       |
-|--------------------|-------------------|
-| `power_zones`      | Power zone data   |
-| `heart_rate_zones` | Heart rate zones  |
-
-### `Index`
-
-| Field | Description           | Unit |
-|-------|-----------------------|------|
-| `IF`  | Intensity Factor      | -    |
-| `EF`  | Efficiency Factor     | -    |
-| `VI`  | Variability Index     | -    |
-
-### `Curves`
-
-Used for drawing graphs, it returns a list where the index represents the time axis.
-
-| Field              | Desciption                                                   |
-| ------------------ | ------------------------------------------------------------ |
-| `power_curve`      | Records the best power within xx seconds.                    |
-| `torque_curve`     | The calculated torque data.                                  |
-| `wbal_curve`       | W' bal curve (The changes of anaerobic reserves over time).  |
-| `decoupling_curve` | The variation of power/heart rate over time is used to visually represent the decoupling rate. |
+| 字段名            | 说明                         | 单位     |
+| ----------------- | ---------------------------- | -------- |
+| `time_info`       | 开始时间 / 结束时间 / 总时长 | -        |
+| `coast_time`      | 溜车总时间                   | 时:分:秒 |
+| `coast_ratio`     | 溜车时间占比（百分比）       | %        |
+| `avg_speed`       | 平均速度                     | km/h     |
+| `max_speed`       | 最大速度                     | km/h     |
+| `total_distance`  | 总骑行距离                   | km       |
+| `elevation`       | 总爬升海拔                   | m        |
+| `max_temperature` | 最高环境温度                 | °C       |
+| `avg_temperature` | 平均环境温度                 | °C       |
+| `min_temperature` | 最低环境温度                 | °C       |
 
 
+
+------
+
+### `Power`（功率相关）
+
+| 字段名          | 说明                                  | 单位 |
+| --------------- | ------------------------------------- | ---- |
+| `avg`           | 平均功率                              | 瓦特 |
+| `max`           | 最大功率                              | 瓦特 |
+| `NP`            | 标准化功率（Normalized Power）        | 瓦特 |
+| `TSS`           | 训练压力分数（Training Stress Score） | 分   |
+| `W`             | 总功                                  | kJ   |
+| `W_ABOVE_FTP`   | 高于FTP的做功                         | kJ   |
+| `CAL`           | 卡路里消耗                            | kcal |
+| `acclimated`    | 高热适应状态下的调整功率              | 瓦特 |
+| `nonacclimated` | 非热适应状态下的调整功率              | 瓦特 |
+
+
+
+------
+
+### `HeartRate`（心率相关）
+
+| 字段名              | 说明                              | 单位 |
+| ------------------- | --------------------------------- | ---- |
+| `avg`               | 平均心率                          | bpm  |
+| `max`               | 最大心率                          | bpm  |
+| `hrrc`              | 心率恢复能力                      | bpm  |
+| `decoupling`        | 功率与心率脱耦比（HR decoupling） | -    |
+| `simple_decoupling` | 简化版的脱耦比                    | -    |
+| `hr_lag`            | 功率与心率的响应延迟              | 秒   |
+
+
+
+------
+
+### `Cadence`（踏频相关）
+
+| 字段名       | 说明     | 单位 |
+| ------------ | -------- | ---- |
+| `avg`        | 平均踏频 | rpm  |
+| `max`        | 最大踏频 | rpm  |
+| `max_torque` | 最大扭矩 | Nm   |
+| `avg_torque` | 平均扭矩 | Nm   |
+
+
+
+------
+
+### `Zones`（分区数据）
+
+| 字段名             | 说明         |
+| ------------------ | ------------ |
+| `power_zones`      | 功率区间统计 |
+| `heart_rate_zones` | 心率区间统计 |
+
+
+
+------
+
+### `Index`（强度指标）
+
+| 字段名 | 说明                          | 单位 |
+| ------ | ----------------------------- | ---- |
+| `IF`   | 强度因子（Intensity Factor）  | -    |
+| `EF`   | 效率因子（Efficiency Factor） | -    |
+| `VI`   | 变异指数（Variability Index） | -    |
+
+
+
+------
+
+### `Curves`（用于绘图的曲线数据）
+
+这些字段是用于前端绘图的数组，索引表示时间轴。
+
+| 字段名             | 说明                                        |
+| ------------------ | ------------------------------------------- |
+| `power_curve`      | 各时间长度（秒）内的最佳功率曲线            |
+| `torque_curve`     | 每一时刻的扭矩计算值                        |
+| `wbal_curve`       | 无氧储备（W'）的变化曲线                    |
+| `decoupling_curve` | 功率/心率比值随时间变化的曲线（表示脱耦率） |
 
 ---
 
@@ -219,15 +245,9 @@ Intervals/
 
 ---
 
-## 📖 TODO
-
-- [ ] 
-
----
-
 ## 👤 Author
 
-Jack Wang / `@Popcornnnnn`
+Jack Wang / `@Popcornnnnnnnn`
 
 
 
