@@ -3,6 +3,7 @@ import numpy as np
 from app.core.utils import format_seconds
 import math
 import json
+from typing import Optional, List, Tuple
 
 with open('app/config/user_config.json', 'r', encoding='utf-8') as f:
     user_config = json.load(f)
@@ -10,13 +11,13 @@ with open('app/config/user_config.json', 'r', encoding='utf-8') as f:
 
 
 def avg_power(power_data: pd.Series) -> int:
-    return round(power_data.mean())
+    return int(round(power_data.mean()))
 
 def max_power(power_data: pd.Series) -> int:
     return int(power_data.max())
 
 def normalized_power(power_data: pd.Series) -> int:
-    rolling = power_data.rolling(window=30, min_periods=30).mean().dropna()
+    rolling = power_data.rolling(window=30, min_periods=30).mean().dropna() # type:ignore
     return int((rolling.pow(4).mean()) ** 0.25)
 
 def training_stress_score(power_data: pd.Series, total_time_hr: float) -> int:
@@ -125,11 +126,11 @@ def get_max_power_duration_curve(power_data: pd.Series) -> list[int]:
     for duration in range(1, len(power_data) - 2):
         rolling_mean = power_data.rolling(window=duration).mean()
         max_power = rolling_mean.max()
-        if pd.isna(max_power):
+        if pd.isna(max_power): # type: ignore
             max_power = 0
         else:
             max_power = round(max_power)
-        max_avg_power.append(max_power)
+        max_avg_power.append(max_power) # type: ignore
 
     return max_avg_power
 
@@ -215,19 +216,35 @@ def get_altitude_adjusted_power_nonacclimatized(power_data: pd.Series, altitude_
     """未适应高原运动员的海拔修正功率"""
     return get_altitude_adjusted_power(power_data, altitude_data, model="bassett_nonacclim")["alt"]
 
-def left_right_balance(balance_data: pd.Series):
+def left_right_balance(balance_data: pd.Series) -> Tuple[int, int]:
+    def parse_left_right(value: Optional[float]) -> Optional[Tuple[int, int]]:
+        try:
+            raw = int(value) #type:ignore
+        except (ValueError, TypeError):
+            return None
+        
+        side_flag = raw & 0x01
+        percent = raw >> 1
+        if side_flag == 1:
+            right = percent
+            left = 100 - percent
+        else:
+            left = percent
+            right = 100 - percent
+        return (left, right)
 
-    balance_series = pd.to_numeric(balance_data, errors='coerce').dropna()
+    parsed = balance_data.map(parse_left_right).dropna()
+    if parsed.empty:
+        return (50, 50)
 
-    if balance_series.empty:
-        return None  # 没有有效数据
+    left_values = [lr[0] for lr in parsed]
+    right_values = [lr[1] for lr in parsed]
 
-    right_percentages = balance_series.astype(int) & 0b01111111
-    left_percentages = 100 - right_percentages
+    avg_left = int(round(np.mean(left_values)))
+    avg_right = int(round(np.mean(right_values)))
 
-    avg_left = left_percentages.mean()
-
-    return round(avg_left, 1)
+    return (avg_left, avg_right)
+    
 
 
 from scipy.optimize import curve_fit
