@@ -125,7 +125,11 @@ def get_max_power_duration_curve(power_data: pd.Series) -> list[int]:
     for duration in range(1, len(power_data) - 2):
         rolling_mean = power_data.rolling(window=duration).mean()
         max_power = rolling_mean.max()
-        max_avg_power.append(round(max_power))
+        if pd.isna(max_power):
+            max_power = 0
+        else:
+            max_power = round(max_power)
+        max_avg_power.append(max_power)
 
     return max_avg_power
 

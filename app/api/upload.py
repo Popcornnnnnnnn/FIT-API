@@ -237,12 +237,12 @@ async def upload_fit(file: UploadFile = File(...)):
             "decoupling_curve": decoupling_curve, # Decoupling Ratio Curve
         },
         "raw_data": {
-            "power": cleaned_data['power'].tolist() if 'power' in cleaned_data.columns else None,
-            "heart_rate": cleaned_data['heart_rate'].tolist() if 'heart_rate' in cleaned_data.columns else None,
-            "cadence": cleaned_data['cadence'].tolist() if 'cadence' in cleaned_data.columns else None,
-            "speed": cleaned_data['enhanced_speed'].tolist() if 'enhanced_speed' in cleaned_data.columns else None,
-            "altitude": cleaned_data['enhanced_altitude'].tolist() if 'enhanced_altitude' in cleaned_data.columns else None,
-            "temperature": cleaned_data['temperature'].tolist() if 'temperature' in cleaned_data.columns else None,
+            "power": cleaned_data['power'].fillna(0).tolist() if 'power' in cleaned_data.columns else None,
+            "heart_rate": cleaned_data['heart_rate'].fillna(0).tolist() if 'heart_rate' in cleaned_data.columns else None,
+            "cadence": cleaned_data['cadence'].fillna(0).tolist() if 'cadence' in cleaned_data.columns else None,
+            "speed": cleaned_data['enhanced_speed'].fillna(0).tolist() if 'enhanced_speed' in cleaned_data.columns else None,
+            "altitude": cleaned_data['enhanced_altitude'].fillna(0).tolist() if 'enhanced_altitude' in cleaned_data.columns else None,
+            "temperature": cleaned_data['temperature'].fillna(0).tolist() if 'temperature' in cleaned_data.columns else None,
         },
 
     }
