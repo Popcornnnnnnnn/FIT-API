@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Literal
+from typing import Literal, List, Tuple
 from app.core.utils import format_seconds
 import math
 import numpy as np
@@ -10,7 +10,7 @@ with open('app/config/user_config.json', 'r', encoding='utf-8') as f:
     user_config = json.load(f)
 
 def avg_heart_rate(hr_data: pd.Series) -> int:
-    return round(hr_data.mean())
+    return int(round(hr_data.mean()))
 
 def max_heart_rate(hr_data: pd.Series) -> int:
     return int(hr_data.max())
@@ -149,8 +149,8 @@ def heart_rate_lag(power_data: pd.Series, heart_rate_data: pd.Series, max_lag_se
     start = warmup * 60
     end = total_len - cooldown * 60
 
-    p_mid = power_data[start:end].reset_index(drop=True)
-    hr_mid = heart_rate_data[start:end].reset_index(drop=True)
+    p_mid = power_data[start:end].reset_index(drop=True) # type: ignore
+    hr_mid = heart_rate_data[start:end].reset_index(drop=True) # type: ignore
 
     # ---------------- Step 2: 平滑处理 ----------------
     power_smooth = p_mid.rolling(window=30, min_periods=1, center=True).mean()
@@ -161,8 +161,8 @@ def heart_rate_lag(power_data: pd.Series, heart_rate_data: pd.Series, max_lag_se
     best_corr = -np.inf
 
     for lag in range(0, max_lag_sec + 1):
-        shifted_hr = hr_smooth[lag:].reset_index(drop=True)
-        aligned_power = power_smooth[:len(shifted_hr)].reset_index(drop=True)
+        shifted_hr = hr_smooth[lag:].reset_index(drop=True)# type: ignore
+        aligned_power = power_smooth[:len(shifted_hr)].reset_index(drop=True)# type: ignore
 
         if len(aligned_power) < 300:  # 至少5分钟有效数据
             continue
@@ -177,7 +177,7 @@ def heart_rate_lag(power_data: pd.Series, heart_rate_data: pd.Series, max_lag_se
 
     return best_lag
 
-def decoupling_ratio(df: pd.DataFrame) -> float:
+def decoupling_ratio(df: pd.DataFrame) -> Tuple[float, List]:
     warmup = user_config["heart_rate"]["warmup_time"]
     cooldown = user_config["heart_rate"]["cooldown_time"]
     if len(df) <= (warmup + cooldown) * 60:
@@ -255,4 +255,4 @@ def simple_decoupling_ratio(df: pd.DataFrame) -> float:
 
     decoupling = (second_avg - first_avg) / first_avg * 100
 
-    return round(decoupling, 1)
+    return float(round(decoupling, 1))

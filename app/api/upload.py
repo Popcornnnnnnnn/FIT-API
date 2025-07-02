@@ -6,6 +6,7 @@ import shutil
 import os
 import pandas as pd
 from tempfile import NamedTemporaryFile
+from typing import cast
 
 from pandas.core import series
 
@@ -55,7 +56,7 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = False):
         os.remove(tmp_path)
 
 
-    cleaned_data: pd.DataFrame = clean_fit_data(data)
+    cleaned_data = clean_fit_data(data)
     FTP           = user_config["power"]["FTP"]
 
 
@@ -66,80 +67,80 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = False):
 
 
     # 计算基本指标
-    # moving_time   = len(cleaned_data)
-    # Dis           = total_distance(cleaned_data['distance'])
-    # MaxS          = max_speed(cleaned_data['enhanced_speed'])
-    # AvgS          = round(Dis / (len(cleaned_data) / 3600.0), 1) # average speed in km/h
-    # Elev          = total_elevation_gain(cleaned_data['enhanced_altitude'])
-    # coast_time    = coasting_time(cleaned_data['enhanced_speed'], cleaned_data['power']) \
-    # if not cleaned_data['enhanced_speed'].isnull().all() else coasting_time(cleaned_data['enhanced_speed'])
-    # coast_ratio   = round((coast_time / moving_time) * 100, 1) if moving_time > 0 else None
+    moving_time   = len(cleaned_data)
+    Dis           = total_distance(cast(pd.Series, cleaned_data['distance']))
+    MaxS          = max_speed(cast(pd.Series, cleaned_data['enhanced_speed']))
+    AvgS          = round(Dis / (len(cleaned_data) / 3600.0), 1) # average speed in km/h
+    Elev          = total_elevation_gain(cast(pd.Series, cleaned_data['enhanced_altitude']))
+    coast_time    = coasting_time(cast(pd.Series, cleaned_data['enhanced_speed']), cast(pd.Series, cleaned_data['power'])) \
+    if not cast(pd.Series, cleaned_data['enhanced_speed']).isnull().all() else coasting_time(cast(pd.Series, cleaned_data['enhanced_speed']))
+    coast_ratio   = round((coast_time / moving_time) * 100, 1) if moving_time > 0 else None
 
-    # if "total_ascent" in session.columns:
-    #     Elev = int(session["total_ascent"].iloc[0])
+    if "total_ascent" in session.columns:
+        Elev = int(session["total_ascent"].iloc[0])
 
 
-    # # 计算功率相关指标
-    # if not cleaned_data['power'].isnull().all():
-    #     AP          = avg_power(cleaned_data['power'])                                          
-    #     MaxP        = max_power(cleaned_data['power'])                                          
-    #     NP          = normalized_power(cleaned_data['power'])                                   
-    #     TSS         = training_stress_score(cleaned_data['power'], len(cleaned_data) / 3600.0)  
-    #     W           = calculate_work_kj(cleaned_data['power'])                                 
-    #     W_ABOVE_FTP = calculate_work_kj_above_ftp(cleaned_data['power'])                       
-    #     CAL         = estimate_calories(cleaned_data['power'])       
-    #     # eFTP        = estimate_eFTP(cleaned_data['power']) 
-    # else:
-    #     AP, MaxP, NP, TSS, W, W_ABOVE_FTP, CAL, eFTP = None, None, None, None, None, None, None, None
+    # 计算功率相关指标
+    if not cast(pd.Series, cleaned_data['power']).isnull().all():
+        AP          = avg_power(cast(pd.Series, cleaned_data['power']))                                          
+        MaxP        = max_power(cast(pd.Series, cleaned_data['power']))                                          
+        NP          = normalized_power(cast(pd.Series, cleaned_data['power']))                                   
+        TSS         = training_stress_score(cast(pd.Series, cleaned_data['power']), len(cleaned_data) / 3600.0)  
+        W           = calculate_work_kj(cast(pd.Series, cleaned_data['power']))                                 
+        W_ABOVE_FTP = calculate_work_kj_above_ftp(cast(pd.Series, cleaned_data['power']))                       
+        CAL         = estimate_calories(cast(pd.Series, cleaned_data['power']))       
+        # eFTP        = estimate_eFTP(cast(pd.Series, cleaned_data['power'])) 
+    else:
+        AP, MaxP, NP, TSS, W, W_ABOVE_FTP, CAL, eFTP = None, None, None, None, None, None, None, None
         
-    # if "total_calories" in session.columns:
-    #     CAL = int(session["total_calories"].iloc[0])
+    if "total_calories" in session.columns:
+        CAL = int(session["total_calories"].iloc[0])
 
     
-    # if not cleaned_data['power'].isnull().all() and cleaned_data['altitude'].notnull().all(): 
-    #     acclim_power = get_altitude_adjusted_power_acclimatized(cleaned_data['power'], cleaned_data['altitude'],)
-    #     nonacclimpower = get_altitude_adjusted_power_nonacclimatized(cleaned_data['power'], cleaned_data['altitude'],)
-    # else:
-    #     acclim_power, nonacclimpower = None, None
+    if not cast(pd.Series, cleaned_data['power']).isnull().all() and cast(pd.Series, cleaned_data['altitude']).notnull().all(): 
+        acclim_power = get_altitude_adjusted_power_acclimatized(cast(pd.Series, cleaned_data['power']), cast(pd.Series, cleaned_data['altitude']))
+        nonacclimpower = get_altitude_adjusted_power_nonacclimatized(cast(pd.Series, cleaned_data['power']), cast(pd.Series, cleaned_data['altitude']))
+    else:
+        acclim_power, nonacclimpower = None, None
         
 
-    # # 计算心率相关指标
-    # if not cleaned_data['heart_rate'].isnull().all():
-    #     AvgHR = avg_heart_rate(cleaned_data['heart_rate'])                             
-    #     MaxHR = max_heart_rate(cleaned_data['heart_rate'])                            
-    #     HRRC  = heart_rate_recovery_capablility(cleaned_data['heart_rate'])            
-    # else:
-    #     AvgHR, MaxHR, HRRC = None, None, None
+    # 计算心率相关指标
+    if not cast(pd.Series, cleaned_data['heart_rate']).isnull().all():
+        AvgHR = avg_heart_rate(cast(pd.Series, cleaned_data['heart_rate']))                             
+        MaxHR = max_heart_rate(cast(pd.Series, cleaned_data['heart_rate']))                            
+        HRRC  = heart_rate_recovery_capablility(cast(pd.Series, cleaned_data['heart_rate']))            
+    else:
+        AvgHR, MaxHR, HRRC = None, None, None
     
-    # # 心率解耦率相关指标
-    # if not cleaned_data['heart_rate'].isnull().all() and not cleaned_data['power'].isnull().all(): 
-    #     decoupling, decoupling_curve = decoupling_ratio(cleaned_data)
-    #     hr_lag            = heart_rate_lag(cleaned_data['power'], cleaned_data['heart_rate'])
-    #     simple_decoupling = simple_decoupling_ratio(cleaned_data)
-    # else: 
-    #     decoupling, decoupling_curve, hr_lag, simple_decoupling = None, None, None, None
+    # 心率解耦率相关指标
+    if not cast(pd.Series, cleaned_data['heart_rate']).isnull().all() and not cast(pd.Series, cleaned_data['power']).isnull().all():
+        decoupling, decoupling_curve = decoupling_ratio(cleaned_data)
+        hr_lag            = heart_rate_lag(cast(pd.Series, cleaned_data['power']), cast(pd.Series, cleaned_data['heart_rate']))
+        simple_decoupling = simple_decoupling_ratio(cleaned_data)
+    else: 
+        decoupling, decoupling_curve, hr_lag, simple_decoupling = None, None, None, None
 
 
     # 计算踏频相关指标
-    if 'cadence' in cleaned_data.columns and not cleaned_data['cadence'].isnull().all(): # type: ignore
-        avgCadence = avg_cadence(cleaned_data['cadence']) # type: ignore
-        maxCadence = max_cadence(cleaned_data['cadence']) # type: ignore
+    if 'cadence' in cleaned_data.columns and not cast(pd.Series, cleaned_data['cadence']).isnull().all():
+        avgCadence = avg_cadence(cast(pd.Series, cleaned_data['cadence']))
+        maxCadence = max_cadence(cast(pd.Series, cleaned_data['cadence']))
     else:
         avgCadence, maxCadence = None, None
-    if 'cadence' in cleaned_data.columns and 'power' in cleaned_data.columns and not cleaned_data['cadence'].isnull().all() and not cleaned_data['power'].isnull().all():# type: ignore
-        maxTorque = max_torque(cleaned_data['cadence'], cleaned_data['power']) # type: ignore
-        avgTorque = avg_torque(cleaned_data['cadence'], cleaned_data['power']) # type: ignore
+    if 'cadence' in cleaned_data.columns and 'power' in cleaned_data.columns and not cast(pd.Series, cleaned_data['cadence']).isnull().all() and not cast(pd.Series, cleaned_data['power']).isnull().all():
+        maxTorque = max_torque(cast(pd.Series, cleaned_data['cadence']), cast(pd.Series, cleaned_data['power']))
+        avgTorque = avg_torque(cast(pd.Series, cleaned_data['cadence']), cast(pd.Series, cleaned_data['power']))
     else:
         maxTorque, avgTorque = None, None
 
     # 将left_right_balance列输出到文件，方便查看
     with open("left_right_balance_output.txt", "w", encoding="utf-8") as f:
-        f.write(cleaned_data['left_right_balance'].to_string())
+        f.write(cast(pd.Series, cleaned_data['left_right_balance']).to_string())
           
 
 
     if "left_right_balance" in cleaned_data.columns:
-        LEFT, RIGHT = left_right_balance(cleaned_data['left_right_balance']) # type: ignore
+        LEFT, RIGHT = left_right_balance(cast(pd.Series, cleaned_data['left_right_balance']))
 
     else:
         LEFT, RIGHT = None, None
@@ -148,63 +149,63 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = False):
 
  
     # 计算区间信息
-    # P_ZONES  = power_zones(cleaned_data['power'])
-    # HR_ZONES = heart_rate_zones("threshold", cleaned_data["heart_rate"])  # 默认使用阈值方法
+    P_ZONES  = power_zones(cast(pd.Series, cleaned_data['power']))
+    HR_ZONES = heart_rate_zones("threshold", cast(pd.Series, cleaned_data["heart_rate"]))  # 默认使用阈值方法
 
 
     # 计算其他指标
-    # IF = round(NP / FTP, 2) if NP is not None and NP > 0 else None
-    # EF = round(AP / AvgHR, 2) if AvgHR is not None and AvgHR > 0 and AP is not None and  AP > 0 else None
-    # VI = round(NP / AP, 2) if AP is not None and AP > 0 and NP > 0 else None
+    IF = round(NP / FTP, 2) if NP is not None and FTP is not None and NP > 0 and FTP > 0 else None
+    EF = round(AP / AvgHR, 2) if AP is not None and AvgHR is not None and AvgHR > 0 and AP > 0 else None
+    VI = round(NP / AP, 2) if NP is not None and AP is not None and AP > 0 and NP > 0 else None
 
-    # # 温度
-    # if "temperature" in cleaned_data.columns and not cleaned_data['temperature'].isnull().all():
-    #     MaxT = max_temperature(cleaned_data['temperature'])
-    #     AvgT = avg_temperature(cleaned_data['temperature'])
-    #     MinT = min_temperature(cleaned_data['temperature'])
-    # else:
-    #     MaxT, AvgT, MinT = None, None, None
+    # 温度
+    if "temperature" in cleaned_data.columns and not cast(pd.Series, cleaned_data['temperature']).isnull().all():
+        MaxT = max_temperature(cast(pd.Series, cleaned_data['temperature']))
+        AvgT = avg_temperature(cast(pd.Series, cleaned_data['temperature']))
+        MinT = min_temperature(cast(pd.Series, cleaned_data['temperature']))
+    else:
+        MaxT, AvgT, MinT = None, None, None
     
     
     # 获取绘图信息
-    # power_curve = get_max_power_duration_curve(cleaned_data['power']) if not cleaned_data['power'].isnull().all() else None
-    # torque_curve = get_torque_curve(cleaned_data['cadence'], cleaned_data['power']) if not cleaned_data['cadence'].isnull().all() and not cleaned_data['power'].isnull().all() else None
-    # wbal_curve = get_wbal_curve(cleaned_data['power']) if not cleaned_data['power'].isnull().all() else None
+    power_curve = get_max_power_duration_curve(cast(pd.Series, cleaned_data['power'])) if not cast(pd.Series, cleaned_data['power']).isnull().all() else None
+    torque_curve = get_torque_curve(cast(pd.Series, cleaned_data['cadence']), cast(pd.Series, cleaned_data['power'])) if not cast(pd.Series, cleaned_data['cadence']).isnull().all() and not cast(pd.Series, cleaned_data['power']).isnull().all() else None
+    wbal_curve = get_wbal_curve(cast(pd.Series, cleaned_data['power'])) if not cast(pd.Series, cleaned_data['power']).isnull().all() else None
 
     return {
-        # "Basic": {
-        #     "time_info"      : time_info,
-        #     "coast_time"     : format_seconds(coast_time), # Units      : XXhXXmXXs
-        #     "coast_ratio"    : coast_ratio,                # Units      : %
-        #     "avg_speed"      : AvgS,                       # Units      : km/h
-        #     "max_speed"      : MaxS,                       # Units      : km/h
-        #     "total_distance" : Dis,                        # Units      : km
-        #     "elevation"      : Elev,                       # Units      : m
-        #     "descent"         : int(results["total_descent"]) if results["total_descent"] is not None else None,          # Total Descent, Units: m
-        #     "max_temperature": MaxT,                       # Units      : °C
-        #     "avg_temperature": AvgT,                       # Units      : °C
-        #     "min_temperature": MinT,                       # Units      : °C
-        #     "avg_vam"        : results["avg_vam"],         # Average VAM, Units: m/h
-        # },
-        # "Power": {
-        #     "avg"            : AP,             # Average Power,          Units: watts
-        #     "max"            : MaxP,           # Max Power,              Units: watts
-        #     "normalized_power"     : NP,             # Normalized Power,       Units: watts
-        #     "training_stress_score"            : TSS,            # Training Stress Score,  Units: points
-        #     "work"              : W,              # Work Done,              Units: kJ
-        #     "work_above_ftp"    : W_ABOVE_FTP,    # Work Done Above FTP,    Units: kJ
-        #     "total_calories" : CAL,            # Calories Burned,        Units: kcal
-        #     "nonacclimated"  : nonacclimpower, # Non-acclimatized Power, Units: watts
-        #     "acclimated"     : acclim_power,   # Acclimatized Power,     Units: watts
-        # },
-        # "HeartRate": {
-        #     "avg_heartrate"              : AvgHR,             # Average Heart Rate,                 Units: bpm
-        #     "max_heartrate"              : MaxHR,             # Max Heart Rate,                     Units: bpm
-        #     "hrrc"             : HRRC,              # Heart Rate Recovery Capability,     Units: bpm
-        #     "decoupling"       : decoupling,        # heart rate decoupling ratio,        Units: None
-        #     "simple_decoupling": simple_decoupling, # simple heart rate decoupling ratio, Units: None
-        #     "hr_lag"           : hr_lag,            # Heart Rate Lag,                     Units: seconds
-        # },
+        "Basic": {
+            "time_info"      : time_info,
+            "coast_time"     : format_seconds(coast_time), # Units      : XXhXXmXXs
+            "coast_ratio"    : coast_ratio,                # Units      : %
+            "avg_speed"      : AvgS,                       # Units      : km/h
+            "max_speed"      : MaxS,                       # Units      : km/h
+            "total_distance" : Dis,                        # Units      : km
+            "elevation"      : Elev,                       # Units      : m
+            "descent"         : int(results["total_descent"]) if results["total_descent"] is not None else None,          # Total Descent, Units: m
+            "max_temperature": MaxT,                       # Units      : °C
+            "avg_temperature": AvgT,                       # Units      : °C
+            "min_temperature": MinT,                       # Units      : °C
+            "avg_vam"        : results["avg_vam"],         # Average VAM, Units: m/h
+        },
+        "Power": {
+            "avg"            : AP,             # Average Power,          Units: watts
+            "max"            : MaxP,           # Max Power,              Units: watts
+            "normalized_power"     : NP,             # Normalized Power,       Units: watts
+            "training_stress_score"            : TSS,            # Training Stress Score,  Units: points
+            "work"              : W,              # Work Done,              Units: kJ
+            "work_above_ftp"    : W_ABOVE_FTP,    # Work Done Above FTP,    Units: kJ
+            "total_calories" : CAL,            # Calories Burned,        Units: kcal
+            "nonacclimated"  : nonacclimpower, # Non-acclimatized Power, Units: watts
+            "acclimated"     : acclim_power,   # Acclimatized Power,     Units: watts
+        },
+        "HeartRate": {
+            "avg_heartrate"              : AvgHR,             # Average Heart Rate,                 Units: bpm
+            "max_heartrate"              : MaxHR,             # Max Heart Rate,                     Units: bpm
+            "hrrc"             : HRRC,              # Heart Rate Recovery Capability,     Units: bpm
+            "decoupling"       : decoupling,        # heart rate decoupling ratio,        Units: None
+            "simple_decoupling": simple_decoupling, # simple heart rate decoupling ratio, Units: None
+            "hr_lag"           : hr_lag,            # Heart Rate Lag,                     Units: seconds
+        },
         "Cadence": {
             "avg_cadence"                           : avgCadence,                                # Average Cadence,                    Units: rpm
             "max_cadence"                           : maxCadence,                                # Max Cadence,                        Units: rpm
@@ -227,30 +228,30 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = False):
             "left_balance"                  : LEFT,                                      # Left Balance Percentage,            Units: %
             "right_balance"                 : RIGHT,                                     # Right Balance Percentage,           Units: %
         },
-        # "Zones": {
-        #     "power_zones"     : P_ZONES,  # Power Zones
-        #     "heart_rate_zones": HR_ZONES, # Heart Rate Zones
-        # },
-        # "Index": {
-        #     "IF"                             : IF,                                         # Intensity Factor,                Units: None
-        #     "EF"                             : EF,                                         # Efficiency Factor,               Units: None
-        #     "VI"                             : VI,                                         # Variance Index,                  Units: None
-        #     "total_anaerobic_training_effect": results["total_anaerobic_training_effect"], # Total Anaerobic Training Effect, Units: None
-        #     "total_training_effect"          : results["total_training_effect"],           # Total Training Effect,           Units: None
-        # },
-        # "curves": {
-        #     "power_curve" : power_curve,  # Max Power Duration Curve
-        #     "torque_curve": torque_curve, # Torque Curve
-        #     "wbal_curve"  : wbal_curve,   # W' Balance Curve
-        #     "decoupling_curve": decoupling_curve, # Decoupling Ratio Curve
-        # },
-        # "raw_data": {
-        #     "power": cleaned_data['power'].fillna(0).tolist() if 'power' in cleaned_data.columns else None,
-        #     "heart_rate": cleaned_data['heart_rate'].fillna(0).tolist() if 'heart_rate' in cleaned_data.columns else None,
-        #     "cadence": cleaned_data['cadence'].fillna(0).tolist() if 'cadence' in cleaned_data.columns else None,
-        #     "speed": cleaned_data['enhanced_speed'].fillna(0).tolist() if 'enhanced_speed' in cleaned_data.columns else None,
-        #     "altitude": cleaned_data['enhanced_altitude'].fillna(0).tolist() if 'enhanced_altitude' in cleaned_data.columns else None,
-        #     "temperature": cleaned_data['temperature'].fillna(0).tolist() if 'temperature' in cleaned_data.columns else None,
-        # },
+        "Zones": {
+            "power_zones"     : P_ZONES,  # Power Zones
+            "heart_rate_zones": HR_ZONES, # Heart Rate Zones
+        },
+        "Index": {
+            "IF"                             : IF,                                         # Intensity Factor,                Units: None
+            "EF"                             : EF,                                         # Efficiency Factor,               Units: None
+            "VI"                             : VI,                                         # Variance Index,                  Units: None
+            "total_anaerobic_training_effect": results["total_anaerobic_training_effect"], # Total Anaerobic Training Effect, Units: None
+            "total_training_effect"          : results["total_training_effect"],           # Total Training Effect,           Units: None
+        },
+        "curves": {
+            "power_curve" : power_curve,  # Max Power Duration Curve
+            "torque_curve": torque_curve, # Torque Curve
+            "wbal_curve"  : wbal_curve,   # W' Balance Curve
+            "decoupling_curve": decoupling_curve, # Decoupling Ratio Curve
+        },
+        "raw_data": {
+            "power": cleaned_data['power'].fillna(0).tolist() if 'power' in cleaned_data.columns else None,
+            "heart_rate": cleaned_data['heart_rate'].fillna(0).tolist() if 'heart_rate' in cleaned_data.columns else None,
+            "cadence": cleaned_data['cadence'].fillna(0).tolist() if 'cadence' in cleaned_data.columns else None,
+            "speed": cleaned_data['enhanced_speed'].fillna(0).tolist() if 'enhanced_speed' in cleaned_data.columns else None,
+            "altitude": cleaned_data['enhanced_altitude'].fillna(0).tolist() if 'enhanced_altitude' in cleaned_data.columns else None,
+            "temperature": cleaned_data['temperature'].fillna(0).tolist() if 'temperature' in cleaned_data.columns else None,
+        },
 
     }
