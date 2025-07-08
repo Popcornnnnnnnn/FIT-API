@@ -28,6 +28,7 @@ def training_stress_score(power_data: pd.Series, total_time_hr: float) -> int:
 def power_zones(power_data: pd.Series) -> dict:
 
     FTP = user_config["power"]["FTP"]
+    # print(FTP)
     zone_labels = [f"zone_{i}" for i in range(1, 8)]
     zone_times = {}
     total_time_sec = len(power_data)
@@ -41,6 +42,8 @@ def power_zones(power_data: pd.Series) -> dict:
         math.floor(1.5 * FTP),
         float('inf')
     ]
+    
+
     for i, label in enumerate(zone_labels):
         lower = bounds[i]
         upper = bounds[i + 1]
@@ -70,6 +73,9 @@ def power_zones(power_data: pd.Series) -> dict:
     }
 
     return zone_times
+
+
+
 
 def get_power_zones(FTP: int) -> dict:
     zone_names = [f"Z{i}" for i in range(1, 8)]
@@ -249,5 +255,48 @@ def left_right_balance(balance_data: pd.Series) -> Tuple[int, int]:
 
 from scipy.optimize import curve_fit
 
+# 模板曲线生成：Morton 3P 模型
+def morton_curve(t, W, k, CP):
+    return W / (t + k) + CP
 
+# 构建多个模板曲线（代表不同FTP）
+def build_template_curves(durations):
+    templates = []
+    for CP in range(220, 330, 10):  # FTP 220W 到 320W，每隔10W一条
+        W = 20000 + (CP - 220) * 500   # 假设 W' 随 FTP 增加而增加
+        k = 10
+        curve = {t: morton_curve(t, W, k, CP) for t in durations}
+        templates.append({
+            "CP": CP,
+            "W": W,
+            "k": k,
+            "curve": curve
+        })
+    return templates
+
+# 匹配模板曲线，找出与实际 power_curve 最接近的模板
+def match_power_curve(power_curve: pd.Series) -> dict:
+    durations = power_curve.index.values.astype(float)
+    actual = power_curve.values.astype(float)
+
+    templates = build_template_curves(durations)
+    best_match = None
+    min_error = float('inf')
+
+    for tpl in templates:
+        template_powers = np.array([tpl["curve"][t] for t in durations])
+        error = np.sqrt(np.mean((template_powers - actual) ** 2))  # RMSE
+        if error < min_error:
+            min_error = error
+            best_match = tpl
+
+    return {
+        "estimated_eFTP": best_match["CP"],
+        "rmse": round(min_error, 2),
+        "matched_template": {
+            "CP": best_match["CP"],
+            "W": best_match["W"],
+            "k": best_match["k"]
+        }
+    }
 

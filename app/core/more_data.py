@@ -1,5 +1,9 @@
+# type: ignore
+# pyright: reportGeneralTypeIssues=false
+
 import pandas as pd
 from scipy.signal import savgol_filter
+from typing import Dict, Any
 
 def total_distance(distance_series: pd.Series) -> float:
     if distance_series.empty:
@@ -63,4 +67,6 @@ def avg_temperature(temperature_series: pd.Series) -> int:
 
 def min_temperature(temperature_series: pd.Series) -> int:
     return round(temperature_series.min())
+
+    
 

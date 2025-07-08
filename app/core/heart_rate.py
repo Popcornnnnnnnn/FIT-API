@@ -161,8 +161,8 @@ def heart_rate_lag(power_data: pd.Series, heart_rate_data: pd.Series, max_lag_se
     best_corr = -np.inf
 
     for lag in range(0, max_lag_sec + 1):
-        shifted_hr = hr_smooth[lag:].reset_index(drop=True)# type: ignore
-        aligned_power = power_smooth[:len(shifted_hr)].reset_index(drop=True)# type: ignore
+        shifted_hr = hr_smooth[lag:].reset_index(drop=True)
+        aligned_power = power_smooth[:len(shifted_hr)].reset_index(drop=True)
 
         if len(aligned_power) < 300:  # 至少5分钟有效数据
             continue
@@ -217,42 +217,48 @@ def decoupling_ratio(df: pd.DataFrame) -> Tuple[float, List]:
     converted_ratio_list = [float(x) for x in ratio_list]
     return -round(percent_change, 2), converted_ratio_list
 
+
 def simple_decoupling_ratio(df: pd.DataFrame) -> float:
+    """
+    计算简单的心率解耦率（HR Decoupling Ratio）。
+    要求 DataFrame 中包含 'heart_rate' 和 'power' 字段。
 
-    warmup_min = user_config["heart_rate"]["warmup_time"]
-    cooldown_min = user_config["heart_rate"]["cooldown_time"]
-    
-    # 平滑心率
-    df = df.copy()
-    df['hr_smooth'] = df['heart_rate'].rolling(window=30, min_periods=1, center=True).mean()
+    Returns:
+        解耦率百分比（正数表示后半段效率下降）
+    """
+    if 'heart_rate' not in df or 'power' not in df:
+        raise ValueError("DataFrame must contain 'heart_rate' and 'power' columns.")
 
-    # 按分钟分组，计算每分钟功率与心率比
-    minute_groups = df.groupby(df.index // 60)
-    ratio_list = []
-    for _, group in minute_groups:
-        power_mean = group['power'].mean()
-        hr_mean = group['hr_smooth'].mean()
-        if power_mean < 50 or hr_mean < 100:
-            continue
-        ratio_list.append(power_mean / hr_mean)
+    # 去除心率或功率为 NaN 的数据
+    df = df.dropna(subset=['heart_rate', 'power'])
 
-    total_minutes = len(ratio_list)
-    if total_minutes <= (warmup_min + cooldown_min):
-        return 0.0
+    # 如果数据点不足，返回 NaN
+    if len(df) < 10:
+        return float('nan')
 
-    # 去除热身和冷身时间
-    valid_ratios = ratio_list[warmup_min : total_minutes - cooldown_min]
+    # 分为前后两段
+    half = len(df) // 2
+    df_first = df.iloc[:half]
+    df_second = df.iloc[half:]
 
-    half = len(valid_ratios) // 2
-    first_half = valid_ratios[:half]
-    second_half = valid_ratios[half:]
+    # 计算功率/心率的平均比值
+    p1 = df_first['power'].mean()
+    hr1 = df_first['heart_rate'].mean()
+    p2 = df_second['power'].mean()
+    hr2 = df_second['heart_rate'].mean()
 
-    if not first_half or not second_half:
-        return 0.0
+    # print(p1, hr1, p2, hr2)
 
-    first_avg = np.mean(first_half)
-    second_avg = np.mean(second_half)
+    # 防止除以 0
+    if hr1 == 0 or hr2 == 0:
+        return None
 
-    decoupling = (second_avg - first_avg) / first_avg * 100
+    # 功率/心率比值的相对变化（即解耦率百分比）
+    ratio1 = p1 / hr1
+    ratio2 = p2 / hr2
 
-    return float(round(decoupling, 1))
+    # print(ratio1, ratio2)
+
+    decoupling = ((ratio2 - ratio1) / ratio1) * 100
+
+    return -float(round(decoupling, 1))
