@@ -251,52 +251,49 @@ def left_right_balance(balance_data: pd.Series) -> Tuple[int, int]:
 
     return (avg_left, avg_right)
     
+def ESTIMATE_FTP(power_curve: pd.Series):
+    W_prime = user_config["power"]["WJ"]
+    CUR_FTP = user_config["power"]["FTP"]
+
+    #---------------------------------------------------------------
+    max_w = 0
+    max_time = 0
+    for idx, power in enumerate(power_curve):
+        w = (power - CUR_FTP) * (idx + 1)
+        if w > max_w:
+            max_w = w
+            max_time = idx + 1
+    if max_w > W_prime:
+        W_prime = max_w
+        # 同时应该更新user_config["power"]["WJ"]中的内容
+    # print(f"最大超阈值功 (W') = {max_w}，对应区间时长 = {max_time} 秒")
+
+    #---------------------------------------------------------------
+
+    k = -220
+    max_cp = None
+    max_cp_time = None
+    max_cp_power = None
+
+    for idx, power in enumerate(power_curve):
+        time = idx + 1  # 持续时间，单位：秒
+        if time < 300 :
+            continue  # 只考虑300秒及以上的数据点
+        cp = power - W_prime / (time - k)
+        if (max_cp is None) or (cp > max_cp):
+            max_cp = cp
+            max_cp_time = time
+            max_cp_power = power
+
+    # 打印或返回结果，便于调试和后续使用
+    print(f"估算CP最大值: {max_cp:.2f}, 对应time: {max_cp_time}秒, power: {max_cp_power}W")
+    # return max_cp, max_cp_time, max_cp_power
 
 
-from scipy.optimize import curve_fit
 
-# 模板曲线生成：Morton 3P 模型
-def morton_curve(t, W, k, CP):
-    return W / (t + k) + CP
+    
 
-# 构建多个模板曲线（代表不同FTP）
-def build_template_curves(durations):
-    templates = []
-    for CP in range(220, 330, 10):  # FTP 220W 到 320W，每隔10W一条
-        W = 20000 + (CP - 220) * 500   # 假设 W' 随 FTP 增加而增加
-        k = 10
-        curve = {t: morton_curve(t, W, k, CP) for t in durations}
-        templates.append({
-            "CP": CP,
-            "W": W,
-            "k": k,
-            "curve": curve
-        })
-    return templates
 
-# 匹配模板曲线，找出与实际 power_curve 最接近的模板
-def match_power_curve(power_curve: pd.Series) -> dict:
-    durations = power_curve.index.values.astype(float)
-    actual = power_curve.values.astype(float)
 
-    templates = build_template_curves(durations)
-    best_match = None
-    min_error = float('inf')
 
-    for tpl in templates:
-        template_powers = np.array([tpl["curve"][t] for t in durations])
-        error = np.sqrt(np.mean((template_powers - actual) ** 2))  # RMSE
-        if error < min_error:
-            min_error = error
-            best_match = tpl
-
-    return {
-        "estimated_eFTP": best_match["CP"],
-        "rmse": round(min_error, 2),
-        "matched_template": {
-            "CP": best_match["CP"],
-            "W": best_match["W"],
-            "k": best_match["k"]
-        }
-    }
 

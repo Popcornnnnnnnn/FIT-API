@@ -1,6 +1,6 @@
 # $url = "http://121.41.238.53:8000/api/upload_fit"
 $url = "http://localhost:8000/api/upload_fit"
-$fitFilePath = "E:\Shanghaitech\25Summer\Intervals\test\Fits\19449462560_ACTIVITY.fit"
+$fitFilePath = "E:\Shanghaitech\25Summer\Intervals\test\Fits\19501148013_ACTIVITY.fit"
 
 
 if (-Not (Test-Path $fitFilePath)) {
