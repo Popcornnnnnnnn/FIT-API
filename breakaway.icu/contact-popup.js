@@ -169,14 +169,14 @@ const popupContent = `
                 <span class="contact-popup-label-text">邮箱</span>
                 <span class="contact-popup-colon">：</span>
             </div>
-            <div class="contact-popup-value"><a href="mailto:breakaway@support.com" style="color:#2a4d8f;text-decoration:none;">breakaway@support.com</a></div>
+            <div class="contact-popup-value"><a href="mailto:contact@breakaway.icu" style="color:#2a4d8f;text-decoration:none;">contact@breakaway.icu</a></div>
         </div>
         <div class="contact-popup-row">
             <div class="contact-popup-label-wrap">
                 <span class="contact-popup-label-text">微信公众号</span>
                 <span class="contact-popup-colon">：</span>
             </div>
-            <div class="contact-popup-value">XXXX</div>
+            <div class="contact-popup-value"><span style="color:#2a4d8f;">超级兔子BFC</span></div>
         </div>
     </div>
 `;
