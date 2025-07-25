@@ -1,7 +1,11 @@
-$url = "http://121.41.238.53:8000/api/upload_fit"
-# $url = "http://localhost:8000/api/upload_fit"
-$fitFilePath = "E:\Shanghaitech\25Summer\Intervals\test\Fits\19501148013_ACTIVITY.fit"
-
+# $url = "http://121.41.238.53:8000/api/upload_fit"
+$url = "http://localhost:8000/api/upload_fit"
+# $fitFilePath = ".\Fits\19501148013_ACTIVITY.fit"
+# $fitFilePath = ".\Fits\19300542613_ACTIVITY.fit"
+# $fitFilePath = ".\Fits\19410463815_ACTIVITY.fit"
+# $fitFilePath = ".\Fits\19449462560_ACTIVITY.fit"
+$fitFilePath = ".\Fits\Zwift_Road_to_Sky_in_Watopia.fit"
+# $fitFilePath = ".\Fits\cp3_410w.fit"
 
 if (-Not (Test-Path $fitFilePath)) {
     Write-Host "错误：找不到 FIT 文件路径 $fitFilePath"

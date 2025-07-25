@@ -10,6 +10,7 @@ with open('app/config/user_config.json', 'r', encoding='utf-8') as f:
 
 
 
+
 def avg_power(power_data: pd.Series) -> int:
     return int(round(power_data.mean()))
 
@@ -166,6 +167,21 @@ def get_wbal_curve(power_data: pd.Series) -> list[float]:
 
     return wbal
 
+def get_wbal_range(power_data: pd.Series) -> int:
+    """
+    计算 get_wbal_curve(power_data) 的最大值和最小值的差值（即W' Balance的波动范围）
+    :param power_data: 功率数据（pd.Series）
+    :return: 最大值与最小值的差（int）
+    """
+    wbal_curve = get_wbal_curve(power_data)
+    if not wbal_curve:
+        return 0
+    max_wbal = max(wbal_curve)
+    min_wbal = min(wbal_curve)
+    return int(round(max_wbal - min_wbal))
+
+
+
 def get_altitude_adjusted_power(
     power_data: pd.Series,
     altitude_data: pd.Series,
@@ -289,6 +305,15 @@ def ESTIMATE_FTP(power_curve: pd.Series):
     print(f"估算CP最大值: {max_cp:.2f}, 对应time: {max_cp_time}秒, power: {max_cp_power}W")
     # return max_cp, max_cp_time, max_cp_power
 
+    
+def rolling_power_30s(power_series: pd.Series) -> list:
+    if power_series is None or len(power_series) == 0:
+        return []
+     # 填充缺失值为0
+    power_filled = power_series.fillna(0).astype(float)
+    # 30秒滑动平均，窗口中心对齐
+    rolling_mean = power_filled.rolling(window=30, min_periods=1, center=True).mean()
+    return [round(x, 1) for x in rolling_mean.tolist()]
 
 
     

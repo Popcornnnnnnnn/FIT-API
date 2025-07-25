@@ -177,6 +177,33 @@ def heart_rate_lag(power_data: pd.Series, heart_rate_data: pd.Series, max_lag_se
 
     return best_lag
 
+# INSERT_YOUR_CODE
+def get_power_hr_ratio(power_series: pd.Series, hr_series: pd.Series) -> list:
+    """
+    接受功率和心率的Series，返回功率/心率的数组，保留两位小数。
+    边界条件：
+        - 任一Series为None或长度为0，返回空list
+        - 对应心率为0或NaN时，结果为0.00
+        - 长度不一致时，按最短长度截断
+    """
+    if power_series is None or hr_series is None:
+        return []
+    if len(power_series) == 0 or len(hr_series) == 0:
+        return []
+    # 填充缺失值为0
+    power = power_series.fillna(0).astype(float).tolist()
+    hr = hr_series.fillna(0).astype(float).tolist()
+    min_len = min(len(power), len(hr))
+    ratio = []
+    for i in range(min_len):
+        if hr[i] == 0:
+            ratio.append(0.00)
+        else:
+            ratio.append(round(power[i] / hr[i], 2))
+    return ratio
+
+
+
 def decoupling_ratio(df: pd.DataFrame) -> Tuple[float, List]:
     warmup = user_config["heart_rate"]["warmup_time"]
     cooldown = user_config["heart_rate"]["cooldown_time"]
