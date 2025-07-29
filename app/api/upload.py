@@ -18,27 +18,90 @@ from app.core.more_data import *
 from app.core.utils import format_seconds
 
 fields = [
-    "avg_cadence", "avg_cadence_position", "avg_combined_pedal_smoothness", "avg_fractional_cadence",
-    "avg_heart_rate", "avg_left_pco", "avg_left_pedal_smoothness", "avg_left_power_phase",
-    "avg_left_power_phase_peak", "avg_left_torque_effectiveness", "avg_power", "avg_power_position",
-    "avg_right_pco", "avg_right_pedal_smoothness", "avg_right_power_phase", "avg_right_power_phase_peak",
-    "avg_right_torque_effectiveness", "avg_speed", "avg_temperature", "avg_vam", "enhanced_avg_speed",
-    "enhanced_max_speed", "event", "event_group", "event_type", "first_lap_index", "intensity_factor",
-    "left_right_balance", "max_cadence", "max_cadence_position", "max_fractional_cadence", "max_heart_rate",
-    "max_power", "max_power_position", "max_speed", "max_temperature", "message_index", "nec_lat", "nec_long",
-    "normalized_power", "num_laps", "sport", "sport_index", "stand_count", "start_position_lat",
-    "start_position_long", "start_time", "sub_sport", "swc_lat", "swc_long", "threshold_power", "time_standing",
-    "timestamp", "total_anaerobic_training_effect", "total_ascent", "total_calories", "total_cycles",
-    "total_descent", "total_distance", "total_elapsed_time", "total_fat_calories", "total_fractional_cycles",
-    "total_timer_time", "total_training_effect", "total_work", "training_stress_score", "trigger",
+    "avg_cadence",
+    "avg_cadence_position",
+    "avg_combined_pedal_smoothness",
+    "avg_fractional_cadence",
+    "avg_heart_rate",
+    "avg_left_pco",
+    "avg_left_pedal_smoothness",
+    "avg_left_power_phase",
+    "avg_left_power_phase_peak",
+    "avg_left_torque_effectiveness",
+    "avg_power",
+    "avg_power_position",
+    "avg_right_pco",
+    "avg_right_pedal_smoothness",
+    "avg_right_power_phase",
+    "avg_right_power_phase_peak",
+    "avg_right_torque_effectiveness",
+    "avg_speed",
+    "avg_temperature",
+    "avg_vam",
+    "enhanced_avg_speed",
+    "enhanced_max_speed",
+    "event",
+    "event_group",
+    "event_type",
+    "first_lap_index",
+    "intensity_factor",
+    "left_right_balance",
+    "max_cadence",
+    "max_cadence_position",
+    "max_fractional_cadence",
+    "max_heart_rate",
+    "max_power",
+    "max_power_position",
+    "max_speed",
+    "max_temperature",
+    "message_index",
+    "nec_lat",
+    "nec_long",
+    "normalized_power",
+    "num_laps",
+    "sport",
+    "sport_index",
+    "stand_count",
+    "start_position_lat",
+    "start_position_long",
+    "start_time",
+    "sub_sport",
+    "swc_lat",
+    "swc_long",
+    "threshold_power",
+    "time_standing",
+    "timestamp",
+    "total_anaerobic_training_effect",
+    "total_ascent",
+    "total_calories",
+    "total_cycles",
+    "total_descent",
+    "total_distance",
+    "total_elapsed_time",
+    "total_fat_calories",
+    "total_fractional_cycles",
+    "total_timer_time",
+    "total_training_effect",
+    "total_work",
+    "training_stress_score",
+    "trigger",
 ]
 
 
 router = APIRouter()
 
+
 @router.post("/upload_fit")
-async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data: bool = True, curves: bool = True, Zone: bool = True):
-    if not file.filename or not file.filename.endswith(".fit"): # 检查文件名是否为空或是否为.fit文件
+async def upload_fit(
+    file: UploadFile = File(...),
+    debug: bool = True,
+    raw_data: bool = True,
+    curves: bool = True,
+    Zone: bool = True,
+):
+    if not file.filename or not file.filename.endswith(
+        ".fit"
+    ):  # 检查文件名是否为空或是否为.fit文件
         raise HTTPException(status_code=400, detail="Only .fit files are supported")
 
     # 保存上传文件到临时文件
@@ -49,29 +112,33 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data:
     finally:
         file.file.close()
     try:
-        data      = parse_fit_file(tmp_path)
+        data = parse_fit_file(tmp_path)
         time_info = get_fit_date_time_info(tmp_path)
-        session   = parse_fit_session(tmp_path)
+        session = parse_fit_session(tmp_path)
 
     finally:
         os.remove(tmp_path)
 
     # print(device_info_summary)
-    
 
     cleaned_data = clean_fit_data(data)
-    FTP           = user_config["power"]["FTP"]
+    FTP = user_config["power"]["FTP"]
 
     # 获取数据开始和结束的时间戳，并计算总耗时（秒）
-    if "timestamp" in cleaned_data.columns and not cleaned_data["timestamp"].isnull().all():
+    if (
+        "timestamp" in cleaned_data.columns
+        and not cleaned_data["timestamp"].isnull().all()
+    ):
         # 假设timestamp为pandas的datetime类型或数值型（秒）
         ts_series = cleaned_data["timestamp"].dropna()
         if not ts_series.empty:
             start_timestamp = ts_series.iloc[0]
             end_timestamp = ts_series.iloc[-1]
             # 如果是datetime类型，直接相减
-            if hasattr(start_timestamp, 'to_pydatetime'):
-                duration_seconds = int((end_timestamp - start_timestamp).total_seconds())
+            if hasattr(start_timestamp, "to_pydatetime"):
+                duration_seconds = int(
+                    (end_timestamp - start_timestamp).total_seconds()
+                )
             else:
                 # 假设为数值型（秒），直接相减
                 duration_seconds = int(end_timestamp - start_timestamp)
@@ -85,7 +152,6 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data:
         duration_seconds = None
 
     # print(duration_seconds)
-    
 
     results = {}
 
@@ -94,7 +160,7 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data:
 
         def to_builtin_type(val):
             # 如果是numpy的标量，转为python内置类型
-            if hasattr(val, 'item'):
+            if hasattr(val, "item"):
                 val = val.item()
             # nan转为None
             if isinstance(val, float) and math.isnan(val):
@@ -131,68 +197,112 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data:
         # 2. 总距离（km）
         if "total_distance" in session.columns:
             val = session["total_distance"].iloc[0]
-            total_dis = to_builtin_type(round(val / 1000.0, 2)) if val is not None and not (isinstance(val, float) and math.isnan(val)) else None
+            total_dis = (
+                to_builtin_type(round(val / 1000.0, 2))
+                if val is not None and not (isinstance(val, float) and math.isnan(val))
+                else None
+            )
             # print("11111")
         else:
-            total_dis = to_builtin_type(round(total_distance(cast(pd.Series, cleaned_data['distance'])), 2))
+            total_dis = to_builtin_type(
+                round(total_distance(cast(pd.Series, cleaned_data["distance"])), 2)
+            )
             # print("22222")
 
         # 3. 最大速度（km/h）
         if "max_speed" in session.columns:
             val = session["max_speed"].iloc[0]
-            max_speed_val = to_builtin_type(round(val * 3.6, 1)) if val is not None and not (isinstance(val, float) and math.isnan(val)) else None
+            max_speed_val = (
+                to_builtin_type(round(val * 3.6, 1))
+                if val is not None and not (isinstance(val, float) and math.isnan(val))
+                else None
+            )
         elif "enhanced_max_speed" in session.columns:
             val = session["enhanced_max_speed"].iloc[0]
-            max_speed_val = to_builtin_type(round(val * 3.6, 1)) if val is not None and not (isinstance(val, float) and math.isnan(val)) else None
+            max_speed_val = (
+                to_builtin_type(round(val * 3.6, 1))
+                if val is not None and not (isinstance(val, float) and math.isnan(val))
+                else None
+            )
         else:
-            max_speed_val = to_builtin_type(round(max_speed(cast(pd.Series, cleaned_data['enhanced_speed'])), 1))
+            max_speed_val = to_builtin_type(
+                round(max_speed(cast(pd.Series, cleaned_data["enhanced_speed"])), 1)
+            )
 
         # 4. 平均速度（km/h），保留1位小数
         if "avg_speed" in session.columns:
             val = session["avg_speed"].iloc[0]
-            avg_speed_val = to_builtin_type(round(val * 3.6, 1)) if val is not None and not (isinstance(val, float) and math.isnan(val)) else None
+            avg_speed_val = (
+                to_builtin_type(round(val * 3.6, 1))
+                if val is not None and not (isinstance(val, float) and math.isnan(val))
+                else None
+            )
         elif "enhanced_avg_speed" in session.columns:
             val = session["enhanced_avg_speed"].iloc[0]
-            avg_speed_val = to_builtin_type(round(val * 3.6, 1)) if val is not None and not (isinstance(val, float) and math.isnan(val)) else None
+            avg_speed_val = (
+                to_builtin_type(round(val * 3.6, 1))
+                if val is not None and not (isinstance(val, float) and math.isnan(val))
+                else None
+            )
         else:
-            avg_speed_val = round(total_dis / (moving_time / 3600.0), 1) if moving_time and moving_time > 0 and total_dis is not None else None
+            avg_speed_val = (
+                round(total_dis / (moving_time / 3600.0), 1)
+                if moving_time and moving_time > 0 and total_dis is not None
+                else None
+            )
             avg_speed_val = to_builtin_type(avg_speed_val)
 
         # 5. 总爬升（m）
         if "total_ascent" in session.columns:
             val = session["total_ascent"].iloc[0]
-            elevation_gain = to_builtin_type(int(val)) if val is not None and not (isinstance(val, float) and math.isnan(val)) else None
+            elevation_gain = (
+                to_builtin_type(int(val))
+                if val is not None and not (isinstance(val, float) and math.isnan(val))
+                else None
+            )
         else:
-            elevation_gain = to_builtin_type(total_elevation_gain(cast(pd.Series, cleaned_data['enhanced_altitude'])))
+            elevation_gain = to_builtin_type(
+                total_elevation_gain(cast(pd.Series, cleaned_data["enhanced_altitude"]))
+            )
 
         # 6. 总下降（m）
         if "total_descent" in session.columns:
             val = session["total_descent"].iloc[0]
-            total_descent = to_builtin_type(int(val)) if val is not None and not (isinstance(val, float) and math.isnan(val)) else None
-        else:
-            total_descent = to_builtin_type(int(results["total_descent"])) if results.get("total_descent") is not None else None
-
-        # 7. 滑行时间（秒）
-        if not cast(pd.Series, cleaned_data['enhanced_speed']).isnull().all():
-            coast_time = coasting_time(
-                cast(pd.Series, cleaned_data['enhanced_speed']),
-                cast(pd.Series, cleaned_data['power'])
+            total_descent = (
+                to_builtin_type(int(val))
+                if val is not None and not (isinstance(val, float) and math.isnan(val))
+                else None
             )
         else:
-            coast_time = coasting_time(cast(pd.Series, cleaned_data['enhanced_speed']))
+            total_descent = (
+                to_builtin_type(int(results["total_descent"]))
+                if results.get("total_descent") is not None
+                else None
+            )
+
+        # 7. 滑行时间（秒）
+        if not cast(pd.Series, cleaned_data["enhanced_speed"]).isnull().all():
+            coast_time = coasting_time(
+                cast(pd.Series, cleaned_data["enhanced_speed"]),
+                cast(pd.Series, cleaned_data["power"]),
+            )
+        else:
+            coast_time = coasting_time(cast(pd.Series, cleaned_data["enhanced_speed"]))
         coast_time = to_builtin_type(coast_time)
 
-
-
         # 8. 滑行比例（%）
-        coast_ratio = round((coast_time / moving_time) * 100, 1) if moving_time and moving_time > 0 and coast_time is not None else None
+        coast_ratio = (
+            round((coast_time / moving_time) * 100, 1)
+            if moving_time and moving_time > 0 and coast_time is not None
+            else None
+        )
         coast_ratio = to_builtin_type(coast_ratio)
 
         # 赋值到统一变量名，方便后续使用
-        Dis   = total_dis
-        MaxS  = max_speed_val
-        AvgS  = avg_speed_val
-        Elev  = elevation_gain
+        Dis = total_dis
+        MaxS = max_speed_val
+        AvgS = avg_speed_val
+        Elev = elevation_gain
         descent = total_descent
 
         return {
@@ -208,33 +318,31 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data:
             "MaxS": MaxS,
             "AvgS": AvgS,
             "Elev": Elev,
-            "descent": descent
+            "descent": descent,
         }
 
-    basic_metrics  = calc_basic_metrics()
-    
-    moving_time    = basic_metrics["moving_time"]
-    total_dis      = basic_metrics["total_dis"]
-    max_speed_val  = basic_metrics["max_speed_val"]
-    avg_speed_val  = basic_metrics["avg_speed_val"]
+    basic_metrics = calc_basic_metrics()
+
+    moving_time = basic_metrics["moving_time"]
+    total_dis = basic_metrics["total_dis"]
+    max_speed_val = basic_metrics["max_speed_val"]
+    avg_speed_val = basic_metrics["avg_speed_val"]
     elevation_gain = basic_metrics["elevation_gain"]
-    total_descent  = basic_metrics["total_descent"]
-    coast_time     = basic_metrics["coast_time"]
-    coast_ratio    = basic_metrics["coast_ratio"]
-    Dis            = basic_metrics["Dis"]
-    MaxS           = basic_metrics["MaxS"]
-    AvgS           = basic_metrics["AvgS"]
-    Elev           = basic_metrics["Elev"]
-    descent        = basic_metrics["descent"]
+    total_descent = basic_metrics["total_descent"]
+    coast_time = basic_metrics["coast_time"]
+    coast_ratio = basic_metrics["coast_ratio"]
+    Dis = basic_metrics["Dis"]
+    MaxS = basic_metrics["MaxS"]
+    AvgS = basic_metrics["AvgS"]
+    Elev = basic_metrics["Elev"]
+    descent = basic_metrics["descent"]
 
-
-    
     # 计算功率相关指标
     import math
 
     def to_builtin_type(val):
         # 如果是numpy的标量，转为python内置类型
-        if hasattr(val, 'item'):
+        if hasattr(val, "item"):
             val = val.item()
         # nan转为None
         if isinstance(val, float) and math.isnan(val):
@@ -251,13 +359,33 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data:
         else:
             return None
 
-    AP          = get_metric_from_session_or_calc("avg_power", lambda: avg_power(cast(pd.Series, cleaned_data['power'])))
-    MaxP        = get_metric_from_session_or_calc("max_power", lambda: max_power(cast(pd.Series, cleaned_data['power'])))
-    NP          = get_metric_from_session_or_calc("normalized_power", lambda: normalized_power(cast(pd.Series, cleaned_data['power'])))
-    TSS         = get_metric_from_session_or_calc("training_stress_score", lambda: training_stress_score(cast(pd.Series, cleaned_data['power']), len(cleaned_data) / 3600.0))
-    W           = get_metric_from_session_or_calc("total_work", lambda: calculate_work_kj(cast(pd.Series, cleaned_data['power'])))
-    W_ABOVE_FTP = get_metric_from_session_or_calc("work_above_ftp", lambda: calculate_work_kj_above_ftp(cast(pd.Series, cleaned_data['power'])))
-    CAL         = get_metric_from_session_or_calc("total_calories", lambda: estimate_calories(cast(pd.Series, cleaned_data['power'])))
+    AP = get_metric_from_session_or_calc(
+        "avg_power", lambda: avg_power(cast(pd.Series, cleaned_data["power"]))
+    )
+    MaxP = get_metric_from_session_or_calc(
+        "max_power", lambda: max_power(cast(pd.Series, cleaned_data["power"]))
+    )
+    NP = get_metric_from_session_or_calc(
+        "normalized_power",
+        lambda: normalized_power(cast(pd.Series, cleaned_data["power"])),
+    )
+    TSS = get_metric_from_session_or_calc(
+        "training_stress_score",
+        lambda: training_stress_score(
+            cast(pd.Series, cleaned_data["power"]), len(cleaned_data) / 3600.0
+        ),
+    )
+    W = get_metric_from_session_or_calc(
+        "total_work", lambda: calculate_work_kj(cast(pd.Series, cleaned_data["power"]))
+    )
+    W_ABOVE_FTP = get_metric_from_session_or_calc(
+        "work_above_ftp",
+        lambda: calculate_work_kj_above_ftp(cast(pd.Series, cleaned_data["power"])),
+    )
+    CAL = get_metric_from_session_or_calc(
+        "total_calories",
+        lambda: estimate_calories(cast(pd.Series, cleaned_data["power"])),
+    )
 
     # 兼容session中total_calories优先
     if "total_calories" in session.columns:
@@ -265,108 +393,128 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data:
 
     # 海拔修正功率
     if (
-        not cast(pd.Series, cleaned_data['power']).isnull().all() and
-        'altitude' in cleaned_data.columns and
-        cast(pd.Series, cleaned_data['altitude']).notnull().all()
+        not cast(pd.Series, cleaned_data["power"]).isnull().all()
+        and "altitude" in cleaned_data.columns
+        and cast(pd.Series, cleaned_data["altitude"]).notnull().all()
     ):
-        acclim_power     = to_builtin_type(get_altitude_adjusted_power_acclimatized(
-            cast(pd.Series, cleaned_data['power']),
-            cast(pd.Series, cleaned_data['altitude'])
-        ))
-        nonacclimpower  = to_builtin_type(get_altitude_adjusted_power_nonacclimatized(
-            cast(pd.Series, cleaned_data['power']),
-            cast(pd.Series, cleaned_data['altitude'])
-        ))
+        acclim_power = to_builtin_type(
+            get_altitude_adjusted_power_acclimatized(
+                cast(pd.Series, cleaned_data["power"]),
+                cast(pd.Series, cleaned_data["altitude"]),
+            )
+        )
+        nonacclimpower = to_builtin_type(
+            get_altitude_adjusted_power_nonacclimatized(
+                cast(pd.Series, cleaned_data["power"]),
+                cast(pd.Series, cleaned_data["altitude"]),
+            )
+        )
     else:
         acclim_power, nonacclimpower = None, None
-        
 
     # 计算心率相关指标
-    if not cast(pd.Series, cleaned_data['heart_rate']).isnull().all():
-        AvgHR = avg_heart_rate(cast(pd.Series, cleaned_data['heart_rate']))                             
-        MaxHR = max_heart_rate(cast(pd.Series, cleaned_data['heart_rate']))                            
-        HRRC  = heart_rate_recovery_capablility(cast(pd.Series, cleaned_data['heart_rate']))            
+    if not cast(pd.Series, cleaned_data["heart_rate"]).isnull().all():
+        AvgHR = avg_heart_rate(cast(pd.Series, cleaned_data["heart_rate"]))
+        MaxHR = max_heart_rate(cast(pd.Series, cleaned_data["heart_rate"]))
+        HRRC = heart_rate_recovery_capablility(
+            cast(pd.Series, cleaned_data["heart_rate"])
+        )
     else:
         AvgHR, MaxHR, HRRC = None, None, None
-    
+
     # 心率解耦率相关指标
-    if not cast(pd.Series, cleaned_data['heart_rate']).isnull().all() and not cast(pd.Series, cleaned_data['power']).isnull().all():
+    if (
+        not cast(pd.Series, cleaned_data["heart_rate"]).isnull().all()
+        and not cast(pd.Series, cleaned_data["power"]).isnull().all()
+    ):
         decoupling, decoupling_curve = decoupling_ratio(cleaned_data)
-        hr_lag            = heart_rate_lag(cast(pd.Series, cleaned_data['power']), cast(pd.Series, cleaned_data['heart_rate']))
+        hr_lag = heart_rate_lag(
+            cast(pd.Series, cleaned_data["power"]),
+            cast(pd.Series, cleaned_data["heart_rate"]),
+        )
         simple_decoupling = simple_decoupling_ratio(cleaned_data)
-    else: 
+    else:
         decoupling, decoupling_curve, hr_lag, simple_decoupling = None, None, None, None
 
-
     # 计算踏频相关指标
-    if 'cadence' in cleaned_data.columns and not cast(pd.Series, cleaned_data['cadence']).isnull().all():
-        avgCadence = avg_cadence(cast(pd.Series, cleaned_data['cadence']))
-        maxCadence = max_cadence(cast(pd.Series, cleaned_data['cadence']))
+    if (
+        "cadence" in cleaned_data.columns
+        and not cast(pd.Series, cleaned_data["cadence"]).isnull().all()
+    ):
+        avgCadence = avg_cadence(cast(pd.Series, cleaned_data["cadence"]))
+        maxCadence = max_cadence(cast(pd.Series, cleaned_data["cadence"]))
     else:
         avgCadence, maxCadence = None, None
-    if 'cadence' in cleaned_data.columns and 'power' in cleaned_data.columns and not cast(pd.Series, cleaned_data['cadence']).isnull().all() and not cast(pd.Series, cleaned_data['power']).isnull().all():
-        maxTorque = max_torque(cast(pd.Series, cleaned_data['cadence']), cast(pd.Series, cleaned_data['power']))
-        avgTorque = avg_torque(cast(pd.Series, cleaned_data['cadence']), cast(pd.Series, cleaned_data['power']))
+    if (
+        "cadence" in cleaned_data.columns
+        and "power" in cleaned_data.columns
+        and not cast(pd.Series, cleaned_data["cadence"]).isnull().all()
+        and not cast(pd.Series, cleaned_data["power"]).isnull().all()
+    ):
+        maxTorque = max_torque(
+            cast(pd.Series, cleaned_data["cadence"]),
+            cast(pd.Series, cleaned_data["power"]),
+        )
+        avgTorque = avg_torque(
+            cast(pd.Series, cleaned_data["cadence"]),
+            cast(pd.Series, cleaned_data["power"]),
+        )
     else:
         maxTorque, avgTorque = None, None
 
-
-
-
     if "left_right_balance" in cleaned_data.columns:
-        LEFT, RIGHT = left_right_balance(cast(pd.Series, cleaned_data['left_right_balance']))
+        LEFT, RIGHT = left_right_balance(
+            cast(pd.Series, cleaned_data["left_right_balance"])
+        )
 
     else:
         LEFT, RIGHT = None, None
 
-
-
- 
     # 计算区间信息
     if Zone:
-        P_ZONES  = power_zones(cast(pd.Series, cleaned_data['power']))
-        HR_ZONES = heart_rate_zones("threshold", cast(pd.Series, cleaned_data["heart_rate"]))  # 默认使用阈值方法
-
+        P_ZONES = power_zones(cast(pd.Series, cleaned_data["power"]))
+        HR_ZONES = heart_rate_zones(
+            "threshold", cast(pd.Series, cleaned_data["heart_rate"])
+        )  # 默认使用阈值方法
 
     # 计算其他指标
     # 计算常用骑行指标：强度因子(IF)、效率因子(EF)、变异系数(VI)
-    IF = (
-        round(NP / FTP, 2)
-        if all(x is not None and x > 0 for x in [NP, FTP])
-        else None
-    )
+    IF = round(NP / FTP, 2) if all(x is not None and x > 0 for x in [NP, FTP]) else None
     EF = (
         round(NP / AvgHR, 2)
         if all(x is not None and x > 0 for x in [NP, AvgHR])
         else None
     )
-    VI = (
-        round(NP / AP, 2)
-        if all(x is not None and x > 0 for x in [NP, AP])
-        else None
-    )
+    VI = round(NP / AP, 2) if all(x is not None and x > 0 for x in [NP, AP]) else None
 
     # 温度
-    if "temperature" in cleaned_data.columns and not cast(pd.Series, cleaned_data['temperature']).isnull().all():
-        MaxT = max_temperature(cast(pd.Series, cleaned_data['temperature']))
-        AvgT = avg_temperature(cast(pd.Series, cleaned_data['temperature']))
-        MinT = min_temperature(cast(pd.Series, cleaned_data['temperature']))
+    if (
+        "temperature" in cleaned_data.columns
+        and not cast(pd.Series, cleaned_data["temperature"]).isnull().all()
+    ):
+        MaxT = max_temperature(cast(pd.Series, cleaned_data["temperature"]))
+        AvgT = avg_temperature(cast(pd.Series, cleaned_data["temperature"]))
+        MinT = min_temperature(cast(pd.Series, cleaned_data["temperature"]))
     else:
         MaxT, AvgT, MinT = None, None, None
-    
-    
+
     # 获取绘图信息
     if curves:
-        power_series = cast(pd.Series, cleaned_data['power'])
-        cadence_series = cast(pd.Series, cleaned_data['cadence'])
-        power_curve = get_max_power_duration_curve(power_series) if not power_series.isnull().all() else None
+        power_series = cast(pd.Series, cleaned_data["power"])
+        cadence_series = cast(pd.Series, cleaned_data["cadence"])
+        power_curve = (
+            get_max_power_duration_curve(power_series)
+            if not power_series.isnull().all()
+            else None
+        )
         torque_curve = (
             get_torque_curve(cadence_series, power_series)
             if not cadence_series.isnull().all() and not power_series.isnull().all()
             else None
         )
-        wbal_curve = get_wbal_curve(power_series) if not power_series.isnull().all() else None
-
+        wbal_curve = (
+            get_wbal_curve(power_series) if not power_series.isnull().all() else None
+        )
 
     # print("slope_vam_result:", slope_vam_result)
     # print("vam_array:", vam_array)
@@ -375,29 +523,39 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data:
 
     # 计算训练效果（有氧/无氧/总结）
     if "power" in cleaned_data.columns and not cleaned_data["power"].isnull().all():
-        training_effect = estimate_training_effect(cleaned_data["power"], data_type="power")
-    elif "heart_rate" in cleaned_data.columns and not cleaned_data["heart_rate"].isnull().all():
-        training_effect = estimate_training_effect(cleaned_data["heart_rate"], data_type="hr")
+        training_effect = estimate_training_effect(
+            cleaned_data["power"], data_type="power"
+        )
+    elif (
+        "heart_rate" in cleaned_data.columns
+        and not cleaned_data["heart_rate"].isnull().all()
+    ):
+        training_effect = estimate_training_effect(
+            cleaned_data["heart_rate"], data_type="hr"
+        )
     else:
         training_effect = {
             "aerobic_effect": 0.0,
             "anaerobic_effect": 0.0,
-            "summary": "无数据"
+            "summary": "无数据",
         }
 
     # INSERT_YOUR_CODE
     # 计算坡度相关信息（如最大坡度、上坡距离、下坡距离）
-    if "altitude" in cleaned_data.columns and "distance" in cleaned_data.columns \
-        and not cleaned_data["altitude"].isnull().all() and not cleaned_data["distance"].isnull().all():
+    if (
+        "altitude" in cleaned_data.columns
+        and "distance" in cleaned_data.columns
+        and not cleaned_data["altitude"].isnull().all()
+        and not cleaned_data["distance"].isnull().all()
+    ):
         slope_segment_result = calculate_slope_and_segments(
-            cleaned_data["altitude"],
-            cleaned_data["distance"]
+            cleaned_data["altitude"], cleaned_data["distance"]
         )
     else:
         slope_segment_result = {
             "slope_percent": 0.0,
             "uphill_distance": 0.0,
-            "downhill_distance": 0.0
+            "downhill_distance": 0.0,
         }
 
     result_dict = {
@@ -415,7 +573,11 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data:
         },
         "POWER": {
             "power_curve_graph": power_curve,
-            "power_graph": cleaned_data['power'].fillna(0).tolist() if 'power' in cleaned_data.columns else None,
+            "power_graph": (
+                cleaned_data["power"].fillna(0).tolist()
+                if "power" in cleaned_data.columns
+                else None
+            ),
             "power_zone_graph": P_ZONES,
             "wbal_curve": wbal_curve,
             "rolling_power_graph": rolling_power_30s(cleaned_data["power"]),
@@ -425,7 +587,6 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data:
             "normalized_power": NP,
             "intensity_factor": IF,
             "total_work": W,
-
             # --more--
             "variability_index": VI,
             # 加权平均功率
@@ -436,13 +597,17 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data:
             "w_balance_drop": get_wbal_range(cleaned_data["power"]),
         },
         "HEART_RATE": {
-            "heart_rate_graph": cleaned_data['heart_rate'].fillna(0).tolist() if 'heart_rate' in cleaned_data.columns else None,
+            "heart_rate_graph": (
+                cleaned_data["heart_rate"].fillna(0).tolist()
+                if "heart_rate" in cleaned_data.columns
+                else None
+            ),
             "heart_rate_zone_graph": HR_ZONES,
-            "heart_rate_decoupling_graph": get_power_hr_ratio(cleaned_data["power"], cleaned_data["heart_rate"]),
-        
+            "heart_rate_decoupling_graph": get_power_hr_ratio(
+                cleaned_data["power"], cleaned_data["heart_rate"]
+            ),
             "avg_heart_rate": AvgHR,
             "max_heart_rate": MaxHR,
-
             # --more--
             "heart_rate_recovery_capablility": HRRC,
             "heart_rate_lag": hr_lag,
@@ -450,26 +615,37 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data:
             "decoupling_ratio": decoupling,
         },
         "CADENCE": {
-            "cadence_graph": cleaned_data['cadence'].fillna(0).tolist() if 'cadence' in cleaned_data.columns else None,
-            "torque_graph": get_torque_curve(cleaned_data["cadence"], cleaned_data["power"]),
+            "cadence_graph": (
+                cleaned_data["cadence"].fillna(0).tolist()
+                if "cadence" in cleaned_data.columns
+                else None
+            ),
+            "torque_graph": get_torque_curve(
+                cleaned_data["cadence"], cleaned_data["power"]
+            ),
             "SPI_graph": calculate_spi(cleaned_data["power"]),
-            
             "avg_cadence": avgCadence,
             "max_cadence": maxCadence,
             "left_balance": LEFT,
             "right_balance": RIGHT,
-
             # --more--
             "avg_left_torque_effectiveness": results["avg_left_torque_effectiveness"],
             "avg_right_torque_effectiveness": results["avg_right_torque_effectiveness"],
             "avg_left_pedal_smoothness": results["avg_left_pedal_smoothness"],
             "avg_right_pedal_smoothness": results["avg_right_pedal_smoothness"],
-            "total_pedal_strokes": total_pedal_strokes(cleaned_data["cadence"], moving_time),
-        
-            
+            "total_pedal_strokes": total_pedal_strokes(
+                cleaned_data["cadence"], moving_time
+            ),
         },
-        "SPEED":{
-            "speed_kmh_2f": [round(v * 3.6, 2) for v in cleaned_data['enhanced_speed'].fillna(0).tolist()] if 'enhanced_speed' in cleaned_data.columns else None,
+        "SPEED": {
+            "speed_kmh_2f": (
+                [
+                    round(v * 3.6, 2)
+                    for v in cleaned_data["enhanced_speed"].fillna(0).tolist()
+                ]
+                if "enhanced_speed" in cleaned_data.columns
+                else None
+            ),
             "avg_speed": AvgS,
             "max_speed": MaxS,
             "moving_time": moving_time,
@@ -477,21 +653,25 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data:
             "pause_time": duration_seconds - moving_time,
             "coasting_time": coast_time,
         },
-        "TRAINING_EFFECT": {    
-
-            "training_effect": training_effect, 
+        "TRAINING_EFFECT": {
+            "training_effect": training_effect,
             "training_stress_score": TSS,
-            "carbon_consumtion": estimate_carbohydrate_consumption_v2(cleaned_data["power"]) * 1.5,
+            "carbon_consumtion": estimate_carbohydrate_consumption_v2(
+                cleaned_data["power"]
+            )
+            * 1.5,
         },
         "ALTITUDE": {
-            "altitude_graph": [round(v, 2) for v in cleaned_data['enhanced_altitude'].fillna(0).tolist()] if 'enhanced_altitude' in cleaned_data.columns else None,
+            "altitude_graph": (
+                [
+                    round(v, 2)
+                    for v in cleaned_data["enhanced_altitude"].fillna(0).tolist()
+                ]
+                if "enhanced_altitude" in cleaned_data.columns
+                else None
+            ),
             "vam_graph": calculate_vam(cleaned_data["altitude"]),
-
-
-          
-
             "elevation": Elev,
-
             # --more--
             # 最大坡度
             "max_slope": slope_segment_result["slope_percent"],
@@ -600,5 +780,5 @@ async def upload_fit(file: UploadFile = File(...), debug: bool = True, raw_data:
         } 
     """
     # endregion
-    
+
     return result_dict

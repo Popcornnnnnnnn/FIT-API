@@ -29,7 +29,8 @@ def calculate_vam(altitude_series: pd.Series, time_interval: float = 1.0) -> lis
     # 计算每个点的海拔变化速度（米/秒）
     delta_alt = np.gradient(smooth_alt, time_interval)
     # 转换为米/小时，并保留1位小数
-    vam = [round(float(x) * 3600, 1) for x in delta_alt]
+    vam = [round(float(x) * 3600, 1) for x in delta_alt] 
+
 
     return vam
 

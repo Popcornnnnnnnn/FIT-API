@@ -178,6 +178,13 @@ const popupContent = `
             </div>
             <div class="contact-popup-value"><span style="color:#2a4d8f;">超级兔子BFC</span></div>
         </div>
+        <div class="contact-popup-row">
+            <div class="contact-popup-label-wrap">
+                <span class="contact-popup-label-text">隐私政策</span>
+                <span class="contact-popup-colon">：</span>
+            </div>
+            <div class="contact-popup-value"><a href="https://www.breakaway.icu/privacy.html" target="_blank" style="color:#2a4d8f;text-decoration:none;">点击查看</a></div>
+        </div>
     </div>
 `;
 
@@ -315,6 +322,14 @@ window.addEventListener('DOMContentLoaded', function () {
         contactBtn.addEventListener('click', function (e) {
             e.preventDefault();
             if (!popupEl) openPopup();
+        });
+    }
+    // 绑定隐私政策按钮跳转
+    const privacyBtn = document.getElementById('privacy-link');
+    if (privacyBtn) {
+        privacyBtn.addEventListener('click', function (e) {
+            // 直接跳转到隐私政策页面
+            window.location.href = 'https://www.breakaway.icu/privacy.html';
         });
     }
 });
